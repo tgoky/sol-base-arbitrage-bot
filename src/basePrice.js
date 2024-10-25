@@ -15,8 +15,8 @@ const providers_1 = require("@ethersproject/providers");
 // Base (Ethereum L2) connection setup using @ethersproject provider
 const baseProvider = new providers_1.JsonRpcProvider('https://rpc.base.org');
 // USDC and WETH Token on Base (replace with correct addresses)
-const USDC = new sdk_1.Token(1, 'USDC_CONTRACT_ADDRESS', 6);
-const WETH = new sdk_1.Token(1, 'WETH_CONTRACT_ADDRESS', 18);
+const USDC = new sdk_1.Token(1, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6);
+const WETH = new sdk_1.Token(1, '0x4200000000000000000000000000000000000006', 18);
 // Function to fetch price on Uniswap for Base
 function getBasePrice() {
     return __awaiter(this, void 0, void 0, function* () {

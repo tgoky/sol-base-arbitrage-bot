@@ -1,3 +1,5 @@
+//src/basePrice.ts
+
 import { Fetcher, Route, Token } from '@uniswap/sdk';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
@@ -5,8 +7,8 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 const baseProvider = new JsonRpcProvider('https://rpc.base.org');
 
 // USDC and WETH Token on Base (replace with correct addresses)
-const USDC = new Token(1, 'USDC_CONTRACT_ADDRESS', 6);
-const WETH = new Token(1, 'WETH_CONTRACT_ADDRESS', 18);
+const USDC = new Token(1, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6);
+const WETH = new Token(1, '0x4200000000000000000000000000000000000006', 18);
 
 // Function to fetch price on Uniswap for Base
 export async function getBasePrice() {

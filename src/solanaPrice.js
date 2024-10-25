@@ -25,15 +25,20 @@ function getBirdeyePrice(inputMint, outputMint) {
                     'Content-Type': 'application/json',
                 },
             });
-            const priceData = yield response.json();
+            const textData = yield response.text(); // Get response as text
+            console.log("Response text:", textData); // Log the response text
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}, response: ${textData}`);
+            }
+            const priceData = JSON.parse(textData); // Parse the text as JSON
             // Log the entire response structure for debugging
             console.log(JSON.stringify(priceData, null, 2));
             // Check the structure of the price response
             if (priceData && priceData.data && priceData.data.length > 0) {
                 return {
-                    inAmount: priceData.data[0].inputAmount, // Example key, adjust based on actual response
-                    outAmount: priceData.data[0].outputAmount, // Example key, adjust based on actual response
-                    price: Number(priceData.data[0].outputAmount) / Number(priceData.data[0].inputAmount), // Adjust calculation as needed
+                    inAmount: priceData.data[0].inputAmount,
+                    outAmount: priceData.data[0].outputAmount,
+                    price: Number(priceData.data[0].outputAmount) / Number(priceData.data[0].inputAmount),
                 };
             }
             else {
