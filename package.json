@@ -12,7 +12,9 @@
   "dependencies": {
     "@orca-so/sdk": "^1.2.26",
     "@project-serum/serum": "^0.13.65",
-    "@solana/web3.js": "^1.95.4"
+    "@solana/web3.js": "^1.95.4",
+    "@uniswap/sdk": "^3.0.3",
+    "ethers": "^6.13.4"
   },
   "devDependencies": {
     "@types/node": "^22.7.9",
