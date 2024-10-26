@@ -1,60 +1,42 @@
-import { Connection } from '@solana/web3.js';
+import { createJupiterApiClient } from '@jup-ag/api';
 
-// Solana connection setup
-const solanaConnection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+// Initialize the Jupiter API client
+const jupiterQuoteApi = createJupiterApiClient();
 
-// Function to get the price of a token pair from Birdeye
-export async function getBirdeyePrice(inputMint: string, outputMint: string) {
+// Function to get price from Jupiter for a given input/output pair
+export async function getSolanaPrice(inputMint: string, outputMint: string, amount: number) {
     try {
-        const response = await fetch(`https://api.birdeye.so/v1/prices?baseMint=${inputMint}&quoteMint=${outputMint}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+        // Adjust amount based on USDC's 6 decimals
+        const adjustedAmount = amount * 10 ** 6;
+
+        const quoteResponse = await jupiterQuoteApi.quoteGet({
+            inputMint,
+            outputMint,
+            amount: adjustedAmount, // Amount in smallest units for USDC
+            slippageBps: 100,       // 1% slippage
+            swapMode: 'ExactIn',    // Input amount is fixed, want to get the output
         });
 
-        const priceData = await response.json();
+        console.log("Quote response structure:", JSON.stringify(quoteResponse, null, 2));
 
-        // Log the entire response structure for debugging
-        console.log(JSON.stringify(priceData, null, 2));
+        if (quoteResponse.routePlan && quoteResponse.routePlan.length > 0) {
+            const bestRoute = quoteResponse.routePlan[0];
+            const inAmount = parseFloat(bestRoute.swapInfo.inAmount);
+            const outAmount = parseFloat(bestRoute.swapInfo.outAmount);
 
-        // Check the structure of the price response
-        if (priceData && priceData.data && priceData.data.length > 0) {
+            // Convert to real-world units (1 USDC / SOL price)
+            const price = (outAmount / (10 ** 9)) / (inAmount / (10 ** 6));
+
             return {
-                inAmount: priceData.data[0].inputAmount, // Example key, adjust based on actual response
-                outAmount: priceData.data[0].outputAmount, // Example key, adjust based on actual response
-                price: Number(priceData.data[0].outputAmount) / Number(priceData.data[0].inputAmount), // Adjust calculation as needed
+                inAmount: inAmount / 10 ** 6,  // Converted to USDC real units
+                outAmount: outAmount / 10 ** 9, // Converted to SOL real units
+                price,
             };
         } else {
-            throw new Error('No prices found for the given pair.');
+            throw new Error('No valid routes found in the response.');
         }
     } catch (error) {
         console.error("Error fetching price:", error);
         throw error;
     }
 }
-
-// Function to get Solana price
-export async function getSolanaPrice() {
-    const inputMint = 'YOUR_FHRNAL_MINT_ADDRESS'; // Replace with your actual FHRNAL mint address
-    const outputMint = 'So11111111111111111111111111111111111111112'; // SOL mint address
-    return await getBirdeyePrice(inputMint, outputMint);
-}
-
-// Example usage to get the price between two tokens
-export async function getTokenPriceOnSolana(inputMint: string, outputMint: string) {
-    return await getBirdeyePrice(inputMint, outputMint);
-}
-
-// Define input and output mint addresses at a broader scope
-const inputMint = 'YOUR_FHRNAL_MINT_ADDRESS'; // Replace with your actual FHRNAL mint address
-const outputMint = 'So11111111111111111111111111111111111111112'; // SOL mint address
-
-// Call the function to get the price
-getTokenPriceOnSolana(inputMint, outputMint)
-    .then(priceInfo => {
-        console.log('Price Info:', priceInfo);
-    })
-    .catch(error => {
-        console.error('Error fetching token price:', error);
-    });

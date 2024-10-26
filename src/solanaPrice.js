@@ -9,40 +9,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBirdeyePrice = getBirdeyePrice;
 exports.getSolanaPrice = getSolanaPrice;
-exports.getTokenPriceOnSolana = getTokenPriceOnSolana;
-const web3_js_1 = require("@solana/web3.js");
-// Solana connection setup
-const solanaConnection = new web3_js_1.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-// Function to get the price of a token pair from Birdeye
-function getBirdeyePrice(inputMint, outputMint) {
+const api_1 = require("@jup-ag/api");
+// Initialize the Jupiter API client
+const jupiterQuoteApi = (0, api_1.createJupiterApiClient)();
+// Function to get price from Jupiter for a given input/output pair
+function getSolanaPrice(inputMint, outputMint, amount) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const response = yield fetch(`https://api.birdeye.so/v1/prices?baseMint=${inputMint}&quoteMint=${outputMint}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            // Adjust amount based on USDC's 6 decimals
+            const adjustedAmount = amount * 10 ** 6;
+            const quoteResponse = yield jupiterQuoteApi.quoteGet({
+                inputMint,
+                outputMint,
+                amount: adjustedAmount, // Amount in smallest units for USDC
+                slippageBps: 100, // 1% slippage
+                swapMode: 'ExactIn', // Input amount is fixed, want to get the output
             });
-            const textData = yield response.text(); // Get response as text
-            console.log("Response text:", textData); // Log the response text
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}, response: ${textData}`);
-            }
-            const priceData = JSON.parse(textData); // Parse the text as JSON
-            // Log the entire response structure for debugging
-            console.log(JSON.stringify(priceData, null, 2));
-            // Check the structure of the price response
-            if (priceData && priceData.data && priceData.data.length > 0) {
+            console.log("Quote response structure:", JSON.stringify(quoteResponse, null, 2));
+            if (quoteResponse.routePlan && quoteResponse.routePlan.length > 0) {
+                const bestRoute = quoteResponse.routePlan[0];
+                const inAmount = parseFloat(bestRoute.swapInfo.inAmount);
+                const outAmount = parseFloat(bestRoute.swapInfo.outAmount);
+                // Convert to real-world units (1 USDC / SOL price)
+                const price = (outAmount / (10 ** 9)) / (inAmount / (10 ** 6));
                 return {
-                    inAmount: priceData.data[0].inputAmount,
-                    outAmount: priceData.data[0].outputAmount,
-                    price: Number(priceData.data[0].outputAmount) / Number(priceData.data[0].inputAmount),
+                    inAmount: inAmount / 10 ** 6, // Converted to USDC real units
+                    outAmount: outAmount / 10 ** 9, // Converted to SOL real units
+                    price,
                 };
             }
             else {
-                throw new Error('No prices found for the given pair.');
+                throw new Error('No valid routes found in the response.');
             }
         }
         catch (error) {
@@ -51,28 +49,3 @@ function getBirdeyePrice(inputMint, outputMint) {
         }
     });
 }
-// Function to get Solana price
-function getSolanaPrice() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const inputMint = 'YOUR_FHRNAL_MINT_ADDRESS'; // Replace with your actual FHRNAL mint address
-        const outputMint = 'So11111111111111111111111111111111111111112'; // SOL mint address
-        return yield getBirdeyePrice(inputMint, outputMint);
-    });
-}
-// Example usage to get the price between two tokens
-function getTokenPriceOnSolana(inputMint, outputMint) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield getBirdeyePrice(inputMint, outputMint);
-    });
-}
-// Define input and output mint addresses at a broader scope
-const inputMint = 'YOUR_FHRNAL_MINT_ADDRESS'; // Replace with your actual FHRNAL mint address
-const outputMint = 'So11111111111111111111111111111111111111112'; // SOL mint address
-// Call the function to get the price
-getTokenPriceOnSolana(inputMint, outputMint)
-    .then(priceInfo => {
-    console.log('Price Info:', priceInfo);
-})
-    .catch(error => {
-    console.error('Error fetching token price:', error);
-});
